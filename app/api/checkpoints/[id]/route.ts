@@ -1,4 +1,5 @@
 import { handle, idParam, type IdCtx } from "@/lib/api";
+import { visionModels } from "@/lib/env";
 import { getRun, latestAnalysis } from "@/lib/repo/analysis";
 import { capturesFor, getProject, latestGit, latestTests } from "@/lib/repo/projects";
 import { reviewState } from "@/lib/repo/review";
@@ -14,5 +15,6 @@ export const GET = handle(async (_req, ctx: IdCtx) => {
     analysis: run ? getRun(run.id) : null,
     tests: latestTests(id),
     git: latestGit(id) ?? null,
+    models: visionModels(),
   };
 });

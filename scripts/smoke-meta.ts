@@ -30,8 +30,8 @@ async function main() {
   const imagePath = process.argv[2] ?? path.join("demo", "images", "a-baseline.jpg");
   // Same normalization as the upload pipeline so the recording matches app uploads byte-for-byte.
   const bytes = await sharp(fs.readFileSync(imagePath)).rotate().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 88 }).toBuffer();
-  console.log(`2) extraction on ${imagePath} (${bytes.length} bytes) with ${e.META_VISION_MODEL}`);
-  const result = await extractObservations({ imageBytes: bytes, mimeType: "image/jpeg", inputSha256: sha256(bytes), hardwareContext: "ESP32 DevKitC, L9110S motor driver, DHT22 sensor" });
+  console.log(`2) extraction on ${imagePath} (${bytes.length} bytes) with ${process.env.SMOKE_MODEL ?? e.META_VISION_MODEL}`);
+  const result = await extractObservations({ imageBytes: bytes, mimeType: "image/jpeg", inputSha256: sha256(bytes), hardwareContext: "ESP32 DevKitC, L9110S motor driver, DHT22 sensor", model: process.env.SMOKE_MODEL ?? e.META_VISION_MODEL });
   console.log(`   meta: ${JSON.stringify(result.meta)}`);
   if (!result.ok) {
     console.log(`   FAILED ${result.errorCode}: ${result.message}`);

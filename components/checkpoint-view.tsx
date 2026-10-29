@@ -26,12 +26,40 @@ export type CheckpointPayload = {
   connections: ReviewConnection[];
   tests: { id: string; name: string; status: string; source: string; output_excerpt: string | null; recorded_at: string }[];
   git: null | { commit_sha: string; branch_name: string | null; is_dirty: number | null; commit_message: string | null; source: string; changedFiles: { path: string }[] };
+  models: { default: string; allowed: string[] };
 };
+
+const MODEL_NOTES: Record<string, string> = {
+  "muse-spark-1.3-contributor": "Contributor · cheaper, Meta may train on the photo",
+  "muse-spark-1.3": "Standard · not used for training",
+};
+
+function ModelPicker({ models, value, onChange, disabled }: { models: CheckpointPayload["models"]; value: string | null; onChange: (m: string) => void; disabled: boolean }) {
+  return (
+    <label className="grid gap-1 text-sm">
+      <span className="text-xs text-muted">Model</span>
+      <select
+        value={value ?? models.default}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="rounded-lg border border-line bg-bg px-2 py-1.5 font-mono text-sm"
+      >
+        {models.allowed.map((m) => (
+          <option key={m} value={m}>
+            {m}
+            {MODEL_NOTES[m] ? ` — ${MODEL_NOTES[m]}` : ""}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 export function CheckpointView({ id }: { id: string }) {
   const [data, setData] = useState<CheckpointPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [model, setModel] = useState<string | null>(null);
 
   const load = useCallback(() => api<CheckpointPayload>(`/checkpoints/${id}`).then(setData, (e) => setError(e.message)), [id]);
   useEffect(() => {
@@ -97,7 +125,8 @@ export function CheckpointView({ id }: { id: string }) {
                 <div className="mt-1 text-muted">Your photo is safe. Retry, or continue by marking parts yourself.</div>
               </div>
             )}
-            <Button variant="primary" disabled={!!busy} onClick={() => run("analyze", () => api(`/checkpoints/${id}/analyze`, { body: { force: analysis?.status === "failed" } }))}>
+            <ModelPicker models={data.models} value={model} onChange={setModel} disabled={!!busy} />
+            <Button variant="primary" disabled={!!busy} onClick={() => run("analyze", () => api(`/checkpoints/${id}/analyze`, { body: { force: analysis?.status === "failed", model: model ?? undefined } }))}>
               {analysis?.status === "failed" ? "Retry analysis" : "Analyze visible components"}
             </Button>
             <Button variant="ghost" disabled={!!busy} onClick={() => run("manual", () => api(`/checkpoints/${id}/manual-review`, { body: {} }))}>
@@ -110,6 +139,21 @@ export function CheckpointView({ id }: { id: string }) {
       {capture && reviewing && (
         <>
           <AnalysisBanner analysis={analysis} />
+          {!sealed && analysis?.status === "succeeded" && data.models.allowed.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <ModelPicker models={data.models} value={model} onChange={setModel} disabled={!!busy} />
+              <Button
+                disabled={!!busy}
+                onClick={() => {
+                  // Corrections are tied to the previous run's observations and won't carry over.
+                  if (data.revision > 0 && !window.confirm("Re-analyzing starts review over; your corrections stay in history but won't apply to the new result. Continue?")) return;
+                  run("analyze", () => api(`/checkpoints/${id}/analyze`, { body: { force: true, model: model ?? undefined } }));
+                }}
+              >
+                {busy === "analyze" ? "Analyzing…" : "Re-analyze with this model"}
+              </Button>
+            </div>
+          )}
           <ReviewPanel data={data} capture={capture} readOnly={sealed} onChanged={load} onError={setError} />
         </>
       )}

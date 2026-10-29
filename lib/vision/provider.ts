@@ -17,11 +17,15 @@ export type VisionInput = {
   mimeType: "image/jpeg" | "image/png" | "image/webp";
   inputSha256: string;
   hardwareContext: string;
+  /** Must already be checked against the allowlist (visionModels()). */
+  model: string;
 };
 
 export type VisionRunMetadata = {
   provider: "meta" | "replay" | "fake";
   modelId: string;
+  /** The allowlisted model the user picked; modelId is what the provider reports back. */
+  requestedModel: string;
   promptVersion: string;
   schemaVersion: string;
   latencyMs?: number;
@@ -40,6 +44,7 @@ export type VisionResult =
 
 type Recording = {
   inputSha256: string;
+  requestedModel: string;
   modelId: string;
   promptVersion: string;
   schemaVersion: string;
@@ -53,8 +58,8 @@ type Recording = {
 const REPO_RECORDINGS = path.resolve(process.cwd(), "demo", "recordings");
 const localRecordings = () => path.join(dataDir(), "recordings");
 
-function baseMeta(provider: VisionRunMetadata["provider"], modelId: string): VisionRunMetadata {
-  return { provider, modelId, promptVersion: EXTRACTION_PROMPT_VERSION, schemaVersion: VISION_SCHEMA_VERSION };
+function baseMeta(provider: VisionRunMetadata["provider"], modelId: string, requestedModel: string): VisionRunMetadata {
+  return { provider, modelId, requestedModel, promptVersion: EXTRACTION_PROMPT_VERSION, schemaVersion: VISION_SCHEMA_VERSION };
 }
 
 function parseContent(rawContent: string) {
@@ -75,8 +80,7 @@ export async function extractObservations(input: VisionInput): Promise<VisionRes
 }
 
 async function extractLive(input: VisionInput): Promise<VisionResult> {
-  const modelId = env().META_VISION_MODEL;
-  const meta = baseMeta("meta", modelId);
+  const meta = baseMeta("meta", input.model, input.model);
   const dataUrl = `data:${input.mimeType};base64,${input.imageBytes.toString("base64")}`;
   const messages = [
     { role: "system" as const, content: EXTRACTION_SYSTEM_PROMPT },
@@ -90,6 +94,7 @@ async function extractLive(input: VisionInput): Promise<VisionResult> {
   ];
   try {
     const res = await chatCompletion({
+      model: input.model,
       messages,
       jsonSchema: { name: "workbench_observations", schema: VISION_JSON_SCHEMA },
     });
@@ -113,6 +118,7 @@ async function extractLive(input: VisionInput): Promise<VisionResult> {
     }
     saveRecording({
       inputSha256: input.inputSha256,
+      requestedModel: input.model,
       modelId: res.model,
       promptVersion: meta.promptVersion,
       schemaVersion: meta.schemaVersion,
@@ -131,17 +137,17 @@ async function extractLive(input: VisionInput): Promise<VisionResult> {
 
 /** Replays a previously recorded *real* Meta response for the identical image bytes. */
 function replay(input: VisionInput): VisionResult {
-  const rec = loadRecording(input.inputSha256);
+  const rec = loadRecording(input.inputSha256, input.model);
   if (!rec) {
     return {
       ok: false,
       errorCode: "REPLAY_NOT_FOUND",
-      message: "No recorded Meta response exists for this exact image.",
-      meta: baseMeta("replay", "none"),
+      message: `No recorded ${input.model} response exists for this exact image.`,
+      meta: baseMeta("replay", "none", input.model),
     };
   }
   const meta: VisionRunMetadata = {
-    ...baseMeta("replay", rec.modelId),
+    ...baseMeta("replay", rec.modelId, input.model),
     promptVersion: rec.promptVersion,
     schemaVersion: rec.schemaVersion,
     recordedAt: rec.recordedAt,
@@ -159,13 +165,18 @@ function replay(input: VisionInput): VisionResult {
 function saveRecording(rec: Recording) {
   const dir = localRecordings();
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `${rec.inputSha256}.json`), JSON.stringify(rec, null, 2));
+  fs.writeFileSync(path.join(dir, recordingName(rec.inputSha256, rec.requestedModel)), JSON.stringify(rec, null, 2));
 }
 
-function loadRecording(sha: string): Recording | undefined {
+// One recording per image per model, so both models' answers for a photo can be replayed.
+function recordingName(sha: string, model: string) {
+  return `${sha}.${model.replace(/[^a-z0-9.-]/gi, "_")}.json`;
+}
+
+function loadRecording(sha: string, model: string): Recording | undefined {
   if (!/^[a-f0-9]{64}$/.test(sha)) return undefined;
   for (const dir of [REPO_RECORDINGS, localRecordings()]) {
-    const file = path.join(dir, `${sha}.json`);
+    const file = path.join(dir, recordingName(sha, model));
     if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8")) as Recording;
   }
   return undefined;

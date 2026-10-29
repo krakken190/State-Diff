@@ -5,6 +5,6 @@ import { analyzeCheckpoint } from "@/lib/repo/analysis";
 export const maxDuration = 120;
 
 export const POST = handle(async (req, ctx: IdCtx) => {
-  const body = await jsonBody(req, z.object({ force: z.boolean().optional() }).strict());
+  const body = await jsonBody(req, z.object({ force: z.boolean().optional(), model: z.string().min(1).max(80).optional() }).strict());
   return analyzeCheckpoint(await idParam(ctx), body);
 });

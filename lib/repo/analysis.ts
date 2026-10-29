@@ -1,7 +1,7 @@
 import "server-only";
 import { AppError } from "@/lib/api";
 import { db, newId, now, parseJson, transaction } from "@/lib/db";
-import { env } from "@/lib/env";
+import { env, visionModels } from "@/lib/env";
 import { readObject } from "@/lib/storage";
 import { extractObservations } from "@/lib/vision/provider";
 import { audit, capturesFor, getCheckpoint, getProject, setCheckpointStatus } from "./projects";
@@ -47,7 +47,10 @@ function liveCallsToday(): number {
  * the same image + prompt is reused unless `force` is set, so repeated clicks
  * don't spend inference budget. Failures never delete the capture.
  */
-export async function analyzeCheckpoint(checkpointId: string, opts: { force?: boolean } = {}) {
+export async function analyzeCheckpoint(checkpointId: string, opts: { force?: boolean; model?: string } = {}) {
+  const models = visionModels();
+  const model = opts.model ?? models.default;
+  if (!models.allowed.includes(model)) throw new AppError("VALIDATION_FAILED", `Model "${model}" is not enabled. Add it to META_VISION_MODELS.`);
   const cp = getCheckpoint(checkpointId);
   if (cp.status === "sealed") throw new AppError("CONFLICT", "Checkpoint is sealed.");
   if (cp.status === "analyzing") throw new AppError("CONFLICT", "Analysis is already running for this checkpoint.");
@@ -55,7 +58,8 @@ export async function analyzeCheckpoint(checkpointId: string, opts: { force?: bo
   if (!capture) throw new AppError("VALIDATION_FAILED", "Add a photo before analyzing.");
 
   const existing = latestSuccessfulAnalysis(cp.id);
-  if (existing && !opts.force && existing.input_sha256 === capture.inference_sha256) {
+  const existingModel = existing ? parseJson<{ requestedModel?: string }>(existing.meta_json, {}).requestedModel : undefined;
+  if (existing && !opts.force && existing.input_sha256 === capture.inference_sha256 && existingModel === model) {
     setCheckpointStatus(cp.id, "needs_review");
     return existing;
   }
@@ -81,13 +85,14 @@ export async function analyzeCheckpoint(checkpointId: string, opts: { force?: bo
       mimeType: "image/jpeg",
       inputSha256: capture.inference_sha256,
       hardwareContext: project.hardware_context ?? "",
+      model,
     });
   } catch (err) {
     result = {
       ok: false,
       errorCode: "INTERNAL_ERROR",
       message: (err as Error).message.slice(0, 300),
-      meta: { provider: VISION_PROVIDER, modelId: "unknown", promptVersion: "unknown", schemaVersion: "unknown" },
+      meta: { provider: VISION_PROVIDER, modelId: "unknown", requestedModel: model, promptVersion: "unknown", schemaVersion: "unknown" },
     };
   }
 
