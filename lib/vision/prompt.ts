@@ -1,4 +1,4 @@
-export const EXTRACTION_PROMPT_VERSION = "extract-v1";
+export const EXTRACTION_PROMPT_VERSION = "extract-v2";
 
 export const EXTRACTION_SYSTEM_PROMPT = `You are a conservative visual observer of a photographed electronics workbench.
 
@@ -11,6 +11,7 @@ Rules:
   - componentKey must be the key of a component you listed.
   - terminalLabel is the pin or position name exactly as printed/visible (e.g. "GPIO18", "3V3", "GND", "IN1", "row 12").
   - certainty "visible" only when the insertion point and its label are clearly visible; "inferred" when partly visible; otherwise "unknown" with empty componentKey and terminalLabel.
+  - Only use a terminalLabel that is actually printed next to the pin. If the pin has no printed label (e.g. motor leads, unmarked terminals), report that endpoint as "unknown" — never invent a name like "output" or "terminal".
 - Do not infer power, voltage, resistance, continuity, correct wiring or whether the device works.
 - Do not assume breadboard rails are connected. Do not guess resistor values from unreadable bands.
 - Keep labels generic when markings are unreadable.

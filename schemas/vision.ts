@@ -148,6 +148,15 @@ export const VISION_JSON_SCHEMA = {
 export type ValidationIssue = { path: string; message: string };
 
 /**
+ * Names a model invents for unlabelled pins ("output", "motor terminal 2").
+ * They aren't stable between runs, so treating them as real terminals would
+ * create phantom diffs. Real silkscreen labels like "IN1" or "OUT1" don't match.
+ */
+const GENERIC_TERMINAL = /^(?:(?:motor|power|signal)\s+)?(?:output|input|terminal|pin|lead|wire|pad|connector|contact)s?(?:\s*\d+)?$|^(?:unknown|unlabell?ed|n\/?a|none|\?+)$/i;
+
+export const isGenericTerminalLabel = (label: string) => GENERIC_TERMINAL.test(label.trim());
+
+/**
  * Parse untrusted model JSON and enforce cross-references the JSON schema
  * cannot express. Endpoints that point at unknown components are downgraded
  * to "unknown" rather than trusted.
@@ -175,6 +184,10 @@ export function validateVisionExtraction(
       if (ep.certainty === "unknown") return { componentKey: "", terminalLabel: "", certainty: "unknown" };
       if (!ep.componentKey || !componentKeys.has(ep.componentKey) || !ep.terminalLabel.trim()) {
         warnings.push({ path: `${conn.key}.${name}`, message: "endpoint references no known component/terminal; marked unknown" });
+        return { componentKey: "", terminalLabel: "", certainty: "unknown" };
+      }
+      if (isGenericTerminalLabel(ep.terminalLabel)) {
+        warnings.push({ path: `${conn.key}.${name}`, message: `"${ep.terminalLabel}" is not a printed pin label; marked unknown` });
         return { componentKey: "", terminalLabel: "", certainty: "unknown" };
       }
       return { ...ep, terminalLabel: ep.terminalLabel.trim() };
