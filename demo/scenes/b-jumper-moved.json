@@ -1,0 +1,105 @@
+{
+  "id": "b-jumper-moved",
+  "description": "Yellow motor-signal jumper moved from GPIO18 to GPIO19.",
+  "shotSeed": 2207,
+  "modules": [
+    {
+      "id": "esp32",
+      "kind": "esp32",
+      "x": 110,
+      "y": 170
+    },
+    {
+      "id": "driver",
+      "kind": "motor_driver",
+      "x": 720,
+      "y": 220
+    },
+    {
+      "id": "dht",
+      "kind": "dht22",
+      "x": 760,
+      "y": 540
+    },
+    {
+      "id": "motor",
+      "kind": "motor",
+      "x": 1200,
+      "y": 240
+    }
+  ],
+  "wires": [
+    {
+      "id": "w-orange",
+      "color": "orange",
+      "from": {
+        "module": "esp32",
+        "pin": "VIN"
+      },
+      "to": {
+        "module": "driver",
+        "pin": "VCC"
+      }
+    },
+    {
+      "id": "w-black",
+      "color": "black",
+      "from": {
+        "module": "esp32",
+        "pin": "GND"
+      },
+      "to": {
+        "module": "driver",
+        "pin": "GND"
+      }
+    },
+    {
+      "id": "w-yellow",
+      "color": "yellow",
+      "from": {
+        "module": "esp32",
+        "pin": "GPIO19"
+      },
+      "to": {
+        "module": "driver",
+        "pin": "IN1"
+      }
+    },
+    {
+      "id": "w-blue",
+      "color": "blue",
+      "from": {
+        "module": "esp32",
+        "pin": "GPIO4"
+      },
+      "to": {
+        "module": "dht",
+        "pin": "DATA"
+      }
+    },
+    {
+      "id": "w-red",
+      "color": "red",
+      "from": {
+        "module": "esp32",
+        "pin": "3V3"
+      },
+      "to": {
+        "module": "dht",
+        "pin": "VCC"
+      }
+    },
+    {
+      "id": "w-green",
+      "color": "green",
+      "from": {
+        "module": "driver",
+        "pin": "GND"
+      },
+      "to": {
+        "module": "dht",
+        "pin": "GND"
+      }
+    }
+  ]
+}
