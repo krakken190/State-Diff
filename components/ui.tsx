@@ -1,22 +1,22 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl border border-line bg-surface ${className}`}>{children}</section>;
+  return <section className={`rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(60,40,10,0.06),0_4px_16px_rgba(60,40,10,0.05)] ${className}`}>{children}</section>;
 }
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-accent-strong text-white hover:brightness-110 border-transparent",
-  secondary: "bg-raised text-fg border-line hover:border-accent",
-  ghost: "bg-transparent text-muted border-transparent hover:text-fg",
-  danger: "bg-transparent text-danger border-line hover:border-danger",
+  primary: "bg-brand text-white hover:bg-brand-ink border-transparent shadow-sm",
+  secondary: "bg-surface text-label border-line hover:border-label hover:bg-raised",
+  ghost: "bg-transparent text-label border-transparent hover:bg-raised",
+  danger: "bg-transparent text-brand-ink border-line hover:border-brand hover:bg-brand/5",
 };
 
 export function Button({ variant = "secondary", className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
   return (
     <button
       {...props}
-      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
     />
   );
 }

@@ -15,7 +15,7 @@ export type Overlay = {
 };
 
 const TONE: Record<Overlay["tone"], string> = {
-  accent: "var(--accent)",
+  accent: "var(--brand)",
   added: "var(--added)",
   removed: "var(--removed)",
   changed: "var(--changed)",
@@ -59,7 +59,7 @@ export function EvidenceImage({
 
   return (
     <figure className="relative">
-      <div className="relative overflow-hidden rounded-lg border border-line bg-black" style={{ aspectRatio: `${width} / ${height}` }}>
+      <div className="relative overflow-hidden rounded-xl border border-line bg-raised" style={{ aspectRatio: `${width} / ${height}` }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- private local image served by our API */}
         <img src={src} alt={alt} className="absolute inset-0 h-full w-full select-none" draggable={false} />
         <svg
@@ -104,9 +104,9 @@ export function EvidenceImage({
               y={Math.min(drag.y0, drag.y1)}
               width={Math.abs(drag.x1 - drag.x0)}
               height={Math.abs(drag.y1 - drag.y0)}
-              fill="var(--accent)"
+              fill="var(--brand)"
               fillOpacity={0.15}
-              stroke="var(--accent)"
+              stroke="var(--brand)"
               vectorEffect="non-scaling-stroke"
               style={{ strokeWidth: 2 }}
             />
@@ -118,7 +118,7 @@ export function EvidenceImage({
             .map((o) => (
               <span
                 key={`label-${o.id}`}
-                className="pointer-events-none absolute rounded bg-black/80 px-1.5 py-0.5 text-xs text-white"
+                className="pointer-events-none absolute rounded-md bg-label px-1.5 py-0.5 text-xs font-medium text-white shadow"
                 style={{ left: `${o.bbox.x * 100}%`, top: `${Math.max(0, o.bbox.y * 100 - 4)}%` }}
               >
                 {o.label}

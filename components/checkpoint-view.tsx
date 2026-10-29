@@ -29,29 +29,39 @@ export type CheckpointPayload = {
   models: { default: string; allowed: string[] };
 };
 
-const MODEL_NOTES: Record<string, string> = {
-  "muse-spark-1.3-contributor": "Contributor · cheaper, Meta may train on the photo",
-  "muse-spark-1.3": "Standard · not used for training",
+const MODEL_NOTES: Record<string, { name: string; note: string }> = {
+  "muse-spark-1.3-contributor": { name: "Contributor", note: "Cheaper. Meta may train on the photo." },
+  "muse-spark-1.3": { name: "Standard", note: "Faster. Not used for training." },
 };
 
-function ModelPicker({ models, value, onChange, disabled }: { models: CheckpointPayload["models"]; value: string | null; onChange: (m: string) => void; disabled: boolean }) {
+function ModelPicker({ models, value, onChange, disabled, compact }: { models: CheckpointPayload["models"]; value: string | null; onChange: (m: string) => void; disabled: boolean; compact?: boolean }) {
+  const selected = value ?? models.default;
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-xs text-muted">Model</span>
-      <select
-        value={value ?? models.default}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="rounded-lg border border-line bg-bg px-2 py-1.5 font-mono text-sm"
-      >
-        {models.allowed.map((m) => (
-          <option key={m} value={m}>
-            {m}
-            {MODEL_NOTES[m] ? ` — ${MODEL_NOTES[m]}` : ""}
-          </option>
-        ))}
-      </select>
-    </label>
+    <fieldset className="grid min-w-0 gap-2" disabled={disabled}>
+      <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-label">Model</legend>
+      <div className={`grid gap-2 ${compact ? "sm:grid-cols-2" : ""}`}>
+        {models.allowed.map((m) => {
+          const info = MODEL_NOTES[m];
+          const active = m === selected;
+          return (
+            <label
+              key={m}
+              className={`flex min-w-0 cursor-pointer items-start gap-2.5 rounded-xl border p-3 transition-colors ${active ? "border-brand bg-brand/5" : "border-line bg-surface hover:border-label/40"}`}
+            >
+              <input type="radio" name="vision-model" value={m} checked={active} onChange={() => onChange(m)} className="mt-0.5 accent-[var(--brand)]" />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-label">
+                  {info?.name ?? m}
+                  {m === models.default ? <span className="ml-1.5 text-xs font-normal text-muted">default</span> : null}
+                </span>
+                <span className="block truncate font-mono text-[11px] text-muted">{m}</span>
+                {info ? <span className="mt-0.5 block text-xs text-muted">{info.note}</span> : null}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 
@@ -105,17 +115,20 @@ export function CheckpointView({ id }: { id: string }) {
       {!capture && <CaptureStep busy={busy} onUpload={(file) => run("upload", () => { const f = new FormData(); f.append("file", file); return api(`/checkpoints/${id}/captures`, { form: f }); })} />}
 
       {capture && !reviewing && (
-        <Card className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_320px]">
+        <Card className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_380px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/api/captures/${capture.id}/image`} alt="Captured workbench photo" className="w-full rounded-lg border border-line" />
-          <div className="grid h-fit gap-3">
-            <h2 className="font-semibold">Analyze the photo</h2>
-            <p className="text-sm text-muted">
-              The photo (EXIF stripped, max 1600 px) is sent to Meta&apos;s Muse Spark model to list visible parts and wire endpoints. You review everything before it becomes history.
-            </p>
+          <img src={`/api/captures/${capture.id}/image`} alt="Captured workbench photo" className="w-full min-w-0 rounded-xl border border-line" />
+          <div className="grid h-fit min-w-0 gap-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-brand-ink">Step 2 of 3</div>
+              <h2 className="mt-1 text-lg font-semibold">Analyze the photo</h2>
+              <p className="mt-1 text-sm text-muted">
+                The photo (EXIF stripped, max 1600 px) is sent to Meta&apos;s Muse Spark model to list visible parts and wire endpoints. You review everything before it becomes history.
+              </p>
+            </div>
             {busy === "analyze" ? (
-              <p role="status" className="text-sm text-accent">
-                Analyzing visible components… (this can take up to a minute)
+              <p role="status" className="rounded-lg bg-raised px-3 py-2 text-sm font-medium text-label">
+                Analyzing visible components… this can take up to a minute.
               </p>
             ) : null}
             {analysis?.status === "failed" && (
@@ -140,9 +153,12 @@ export function CheckpointView({ id }: { id: string }) {
         <>
           <AnalysisBanner analysis={analysis} />
           {!sealed && analysis?.status === "succeeded" && data.models.allowed.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <ModelPicker models={data.models} value={model} onChange={setModel} disabled={!!busy} />
+            <details className="rounded-xl border border-line bg-surface px-4 py-3">
+              <summary className="cursor-pointer text-sm font-semibold text-label">Try another model on this photo</summary>
+              <div className="mt-3 grid gap-3 sm:max-w-2xl">
+              <ModelPicker models={data.models} value={model} onChange={setModel} disabled={!!busy} compact />
               <Button
+                className="justify-self-start"
                 disabled={!!busy}
                 onClick={() => {
                   // Corrections are tied to the previous run's observations and won't carry over.
@@ -152,7 +168,8 @@ export function CheckpointView({ id }: { id: string }) {
               >
                 {busy === "analyze" ? "Analyzing…" : "Re-analyze with this model"}
               </Button>
-            </div>
+              </div>
+            </details>
           )}
           <ReviewPanel data={data} capture={capture} readOnly={sealed} onChanged={load} onError={setError} />
         </>
@@ -179,8 +196,8 @@ export function CheckpointView({ id }: { id: string }) {
 function CaptureStep({ busy, onUpload }: { busy: string | null; onUpload: (f: File) => void }) {
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
   return (
-    <Card className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="relative grid min-h-64 place-items-center overflow-hidden rounded-lg border border-dashed border-line bg-bg">
+    <Card className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="relative grid min-h-72 place-items-center overflow-hidden rounded-lg border border-dashed border-line bg-bg">
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={preview.url} alt="Selected photo preview" className="w-full" />
@@ -197,12 +214,15 @@ function CaptureStep({ busy, onUpload }: { busy: string | null; onUpload: (f: Fi
         {/* Alignment grid helps keep the viewpoint stable between checkpoints. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3">
           {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="border border-white/5" />
+            <div key={i} className="border border-label/10" />
           ))}
         </div>
       </div>
       <div className="grid h-fit gap-3">
-        <h2 className="font-semibold">Add photo</h2>
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-brand-ink">Step 1 of 3</div>
+          <h2 className="mt-1 text-lg font-semibold">Add photo</h2>
+        </div>
         <label className="grid gap-2 text-sm">
           <span>Take or choose a photo</span>
           <input

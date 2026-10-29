@@ -1,44 +1,29 @@
 @import "tailwindcss";
 
-/* Semantic tokens from docs/Design system.md. Dark is the preferred demo theme. */
+/*
+ * Palette: warm ivory ground, emerald for text and labels, vermilion for
+ * actions and graphics. Semantic tokens keep components palette-agnostic.
+ */
 :root {
-  --background: #0b1020;
-  --surface: #141b2d;
-  --surface-raised: #1c263a;
-  --border: #344156;
-  --text-primary: #f4f7fb;
-  --text-secondary: #b7c3d6;
-  --accent: #6d9fff;
-  --accent-strong: #3f7bf3;
-  --success: #39c998;
-  --danger: #ff6d7a;
-  --warning: #f7be58;
-  --added: #39c998;
-  --removed: #ff6d7a;
-  --changed: #f7be58;
-  --unknown: #aab4c7;
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --background: #f6f8fc;
-    --surface: #ffffff;
-    --surface-raised: #eef3fa;
-    --border: #cdd6e3;
-    --text-primary: #142036;
-    --text-secondary: #4b5b72;
-    --accent: #245dd1;
-    --accent-strong: #245dd1;
-    --success: #087a57;
-    --danger: #b42338;
-    --warning: #8b5900;
-    --added: #087a57;
-    --removed: #b42338;
-    --changed: #8b5900;
-    --unknown: #5b6679;
-    color-scheme: light;
-  }
+  --background: #f9ebd7; /* warm ivory */
+  --surface: #fffaf2;
+  --surface-raised: #f3e0c4;
+  --border: #e2c9a6;
+  --label: #046a38; /* emerald: headings, labels, links */
+  --text-primary: #1d3326;
+  --text-secondary: #6b5a44;
+  --brand: #e34222; /* vermilion: buttons, overlays, graphics */
+  --brand-ink: #b9321a; /* darker vermilion for small text (contrast) */
+  --accent: #046a38;
+  --accent-strong: #e34222;
+  --success: #046a38;
+  --danger: #b9321a;
+  --warning: #9a5b00;
+  --added: #046a38;
+  --removed: #e34222;
+  --changed: #c27c0e;
+  --unknown: #8a7a63;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -46,8 +31,11 @@
   --color-surface: var(--surface);
   --color-raised: var(--surface-raised);
   --color-line: var(--border);
+  --color-label: var(--label);
   --color-fg: var(--text-primary);
   --color-muted: var(--text-secondary);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
   --color-success: var(--success);
@@ -59,6 +47,7 @@
   --color-unknown: var(--unknown);
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-fraunces), Georgia, serif;
 }
 
 body {
@@ -67,8 +56,24 @@ body {
   font-family: var(--font-sans);
 }
 
+h1,
+h2,
+h3 {
+  color: var(--label);
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
