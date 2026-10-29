@@ -98,7 +98,7 @@ async function extractLive(input: VisionInput): Promise<VisionResult> {
       latencyMs: res.latencyMs,
       promptTokens: res.usage.promptTokens,
       completionTokens: res.usage.completionTokens,
-      estimatedCostUsd: estimateCostUsd(res.usage),
+      estimatedCostUsd: estimateCostUsd(res.model, res.usage),
       providerRequestId: res.providerRequestId,
     });
     const parsed = parseContent(res.content);

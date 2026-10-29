@@ -127,8 +127,15 @@ async function backoff(attempt: number, retryAfter: string | null) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-/** Approximate cost from Meta's published Standard pricing (checked 2026-10-22). Estimate only. */
-export function estimateCostUsd(usage: ChatCompletionResult["usage"]): number | undefined {
-  if (usage.promptTokens == null || usage.completionTokens == null) return undefined;
-  return (usage.promptTokens * 1.25 + usage.completionTokens * 4.25) / 1_000_000;
+/** USD per 1M tokens from Meta's published pricing (checked 2026-10-29). */
+const PRICING: Record<string, { input: number; output: number }> = {
+  "muse-spark-1.3": { input: 1.25, output: 4.25 },
+  "muse-spark-1.3-contributor": { input: 0.1, output: 0.2 },
+};
+
+/** Approximate cost for a known model; undefined when the model's price isn't known. Estimate only. */
+export function estimateCostUsd(model: string, usage: ChatCompletionResult["usage"]): number | undefined {
+  const price = PRICING[model];
+  if (!price || usage.promptTokens == null || usage.completionTokens == null) return undefined;
+  return (usage.promptTokens * price.input + usage.completionTokens * price.output) / 1_000_000;
 }

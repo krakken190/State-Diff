@@ -49,6 +49,8 @@ pnpm install
 pnpm dev                     # http://localhost:3000
 ```
 
+**Model choice.** `META_VISION_MODEL` defaults to `muse-spark-1.3` (Standard: inputs are not used for training). The demo uses `muse-spark-1.3-contributor`, which is about 12–20× cheaper, but Meta may train on the images and responses. That's acceptable for the simulated rig's rendered photos, not for private hardware. The UI labels every analysis that ran in Contributor mode.
+
 Run the demo in a second terminal:
 
 ```bash

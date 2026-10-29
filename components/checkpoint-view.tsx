@@ -204,6 +204,11 @@ function AnalysisBanner({ analysis }: { analysis: CheckpointPayload["analysis"] 
           <span className="rounded border border-line px-1.5 py-0.5">Live Meta inference</span>
         )}
         <span className="font-mono">{analysis.model_id}</span>
+        {analysis.model_id.endsWith("-contributor") ? (
+          <span className="rounded border border-line px-1.5 py-0.5" title="Contributor mode: discounted pricing in exchange for Meta using this image and response to train models.">
+            Contributor mode · Meta may train on this image
+          </span>
+        ) : null}
         {m.latencyMs ? <span>{(m.latencyMs / 1000).toFixed(1)} s</span> : null}
         {m.estimatedCostUsd != null ? <span>≈ ${m.estimatedCostUsd.toFixed(4)}</span> : null}
         {m.promptVersion ? <span className="font-mono">{m.promptVersion}</span> : null}
