@@ -37,7 +37,7 @@ Specs live in [`docs/`](docs/): PRD, architecture, database, security, testing, 
 
 This hackathon build runs **entirely locally**: SQLite plus files under `data/`, with no auth and no cloud database. The Meta Model API is the only network dependency.
 
-The author had no physical electronics bench, so the demo uses a **simulated rig**. `demo/scenes/*.json` describe an ESP32 + L9110S motor driver + DHT22 bench, `demo/render.ts` renders them into photo-like images, and `demo/sim-test.ts` stands in for a hardware-in-the-loop test by checking the firmware's `MOTOR_PIN` against the scene's wiring. The **vision model only ever sees the rendered image**, never the scene file, so the scene files double as ground truth for evaluating it. Test results from the simulator are labelled `simulated` everywhere in the UI.
+The author had no physical electronics bench, so the demo uses a **simulated rig**. `demo/scenes/*.json` describe an ESP32 + L9110S motor driver + DHT22 bench, `demo/render.ts` renders them into bench images, which were then made more realistic with an AI image tool (each one checked by eye and by the model against the intended wiring), and `demo/sim-test.ts` stands in for a hardware-in-the-loop test by checking the firmware's `MOTOR_PIN` against the scene's wiring. These are not photographs of real hardware. The **vision model only ever sees the image**, never the scene file, so the scene files double as ground truth for evaluating it. Test results from the simulator are labelled `simulated` everywhere in the UI.
 
 ## Run it
 

@@ -9,7 +9,7 @@ Full specs live in `docs/`: `PRD.md`, `architecture.md`, `database.md`, `securit
 
 ## Local-edition deviations from the specs (decided with the user, 2026-10-29)
 - **Runs locally only.** No Supabase/Vercel/auth: SQLite via `node:sqlite` (`data/statediff.db`) and local file storage (`data/captures/`). Single implicit local user. Not intended for public deployment.
-- **No physical hardware.** The demo uses a *simulated rig*: `demo/` renders photo-like breadboard images from scene files and runs a simulated motor test against the scene's ground-truth wiring. The UI and README must label this as simulated.
+- **No physical hardware.** The demo uses a *simulated rig*: `demo/` holds AI-enhanced breadboard images rendered from scene files and runs a simulated motor test against the scene's ground-truth wiring. The UI and README must label this as simulated.
 - Env var for the Meta key is `MODEL_API_KEY` (matches Meta docs).
 
 ## Invariants (never break)
