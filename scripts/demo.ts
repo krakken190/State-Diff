@@ -12,6 +12,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { demoImagePath } from "../demo/image-path";
 import { createCheckpoint, readConfig, writeConfig } from "./statediff";
 
 const ROOT = path.resolve(__dirname, "..");
@@ -80,10 +81,10 @@ async function step(which: keyof typeof STEPS, opts: { upload: boolean; analyze:
   fs.writeFileSync(path.join(REPO, ".rig-scene"), path.join(ROOT, "demo", "scenes", `${s.scene}.json`));
 
   const checkpointId = await createCheckpoint(REPO, s.label, { includePatch: true });
-  const image = path.join(ROOT, "demo", "images", `${s.scene}.jpg`);
+  const image = demoImagePath(ROOT, s.scene);
   if (opts.upload) {
     const form = new FormData();
-    form.append("file", new Blob([new Uint8Array(fs.readFileSync(image))], { type: "image/jpeg" }), `${s.scene}.jpg`);
+    form.append("file", new Blob([new Uint8Array(fs.readFileSync(image))]), path.basename(image));
     await api("POST", `/checkpoints/${checkpointId}/captures`, undefined, form);
     console.log(`  uploaded ${path.relative(ROOT, image)}`);
     if (opts.analyze) {

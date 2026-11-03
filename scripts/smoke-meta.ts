@@ -1,12 +1,12 @@
 /**
  * Opt-in live Meta Model API smoke test (costs a few cents).
- *   pnpm smoke:meta [image.jpg]
+ *   pnpm smoke:meta [image]
  * 1. GET /models — confirms the key works and lists available model ids (incl. the SAM id).
  * 2. Sends one demo bench photo for structured extraction and validates it.
  * A successful extraction is recorded under data/recordings for replay mode.
  */
 import fs from "node:fs";
-import path from "node:path";
+import { demoImagePath } from "../demo/image-path";
 
 for (const f of [".env.local", ".env"]) if (fs.existsSync(f)) process.loadEnvFile(f);
 
@@ -27,7 +27,7 @@ async function main() {
   console.log(`   vision model ${e.META_VISION_MODEL}: ${ids.includes(e.META_VISION_MODEL) ? "available" : "NOT LISTED"}`);
   console.log(`   SAM ids listed: ${ids.filter((i) => i.toLowerCase().includes("sam")).join(", ") || "none"}`);
 
-  const imagePath = process.argv[2] ?? path.join("demo", "images", "a-baseline.jpg");
+  const imagePath = process.argv[2] ?? demoImagePath(process.cwd(), "a-baseline");
   // Same normalization as the upload pipeline so the recording matches app uploads byte-for-byte.
   const bytes = await sharp(fs.readFileSync(imagePath)).rotate().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 88 }).toBuffer();
   console.log(`2) extraction on ${imagePath} (${bytes.length} bytes) with ${process.env.SMOKE_MODEL ?? e.META_VISION_MODEL}`);

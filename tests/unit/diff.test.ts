@@ -82,6 +82,19 @@ describe("compareSnapshots", () => {
     expect(e.map((x) => x.type)).toContain("moved");
   });
 
+  it("ignores a shift shared by every part (camera or model box drift)", () => {
+    const b = demoRig("b");
+    b.components = [comp("b", "c1", "ESP32 DevKitC", 0.108, 0.446), comp("b", "c2", "L9110S motor driver", 0.511, 0.314), comp("b", "c3", "DHT22 sensor", 0.558, 0.664)];
+    expect(compareSnapshots(graph(demoRig("a")), graph(b)).events).toEqual([]);
+  });
+
+  it("still reports the one part that moved during a shared shift", () => {
+    const b = demoRig("b");
+    b.components = [comp("b", "c1", "ESP32 DevKitC", 0.108, 0.446), comp("b", "c2", "L9110S motor driver", 0.511, 0.314), comp("b", "c3", "DHT22 sensor", 0.8, 0.664)];
+    const moved = compareSnapshots(graph(demoRig("a")), graph(b)).events.filter((e) => e.type === "moved");
+    expect(moved.map((e) => e.componentLabels[0])).toEqual(["DHT22 sensor"]);
+  });
+
   it("treats a vanished edge with a now-occluded endpoint as unresolved, not removed", () => {
     const b = demoRig("b");
     b.connections[0] = wire("b", "w1", "yellow", ep("c1", "GPIO18"), unknownEp);

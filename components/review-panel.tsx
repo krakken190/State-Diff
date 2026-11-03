@@ -80,9 +80,12 @@ export function ReviewPanel({
     }
   };
 
+  // Every wire and part box at once is unreadable. Show the main parts until
+  // something is selected, then only that item.
+  const isShown = (id: string, isContext: boolean) => (selected ? selected.id === id : !isContext);
   const overlays: Overlay[] = [
     ...data.components
-      .filter((c) => c.review !== "rejected")
+      .filter((c) => c.review !== "rejected" && isShown(c.observationId, c.kind === "breadboard"))
       .map<Overlay>((c) => ({
         id: `component:${c.observationId}`,
         bbox: c.bbox,
@@ -92,7 +95,7 @@ export function ReviewPanel({
         selected: selected?.id === c.observationId,
       })),
     ...data.connections
-      .filter((w) => w.review !== "rejected")
+      .filter((w) => w.review !== "rejected" && isShown(w.observationId, true))
       .map<Overlay>((w) => ({
         id: `connection:${w.observationId}`,
         bbox: w.bbox,
@@ -114,7 +117,7 @@ export function ReviewPanel({
           src={`/api/captures/${capture.id}/image`}
           width={capture.width}
           height={capture.height}
-          alt="Workbench photo with observations (dashed = AI observation, solid = confirmed, dotted = unresolved)"
+          alt="Select a part or wire to highlight it. Dashed = AI observation, solid = confirmed, dotted = unresolved."
           overlays={overlays}
           onSelect={(oid) => {
             const [type, id] = oid.split(":") as ["component" | "connection", string];

@@ -1,9 +1,11 @@
 import type { BBox, EvidenceRef, GraphEdge, GraphNode, Provenance, SnapshotGraph, UnresolvedWire } from "../graph/types";
 
-export const DIFF_ALGORITHM_VERSION = "diff-v1";
+export const DIFF_ALGORITHM_VERSION = "diff-v2";
 
-/** Component centre shift (fraction of image) above which we report MOVED. */
+/** Component centre shift (fraction of image), after removing the common shift, above which we report MOVED. */
 const MOVE_TOLERANCE = 0.06;
+/** A common shift is only meaningful when enough parts agree on it. */
+const MIN_PARTS_FOR_COMMON_SHIFT = 3;
 /** Geometry match: centres within this distance count as plausibly the same object. */
 const MATCH_DISTANCE = 0.12;
 /** A runner-up within this margin of the best geometric match makes the match ambiguous. */
@@ -95,6 +97,15 @@ export function compareSnapshots(baseline: SnapshotGraph, candidate: SnapshotGra
     cTaken.add(options[0].c.logicalKey);
   }
 
+  // Camera movement and model box drift shift every part together between
+  // photos. Only movement relative to the other parts counts as MOVED.
+  const shift = commonShift(
+    bParts.flatMap((b) => {
+      const c = cByKey.get(matches.get(b.logicalKey)?.key ?? "");
+      return b.geometry && c?.geometry ? [{ from: centre(b.geometry), to: centre(c.geometry) }] : [];
+    }),
+  );
+
   for (const b of bParts) {
     const m = matches.get(b.logicalKey);
     if (!m) {
@@ -113,7 +124,7 @@ export function compareSnapshots(baseline: SnapshotGraph, candidate: SnapshotGra
       continue;
     }
     const c = cByKey.get(m.key)!;
-    if (b.geometry && c.geometry && dist(b.geometry, c.geometry) > MOVE_TOLERANCE) {
+    if (b.geometry && c.geometry && residualMove(b.geometry, c.geometry, shift) > MOVE_TOLERANCE) {
       events.push({
         key: `moved:component:${b.logicalKey}`,
         type: "moved",
@@ -329,6 +340,26 @@ export function compareSnapshots(baseline: SnapshotGraph, candidate: SnapshotGra
       .map(([baselineKey, m]) => ({ baselineKey, candidateKey: m.key, method: m.method }))
       .sort((a, b) => a.baselineKey.localeCompare(b.baselineKey)),
   };
+}
+
+type Point = { x: number; y: number };
+
+function median(values: number[]) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** Median displacement of matched parts; a moved part can't drag the median with it. */
+function commonShift(pairs: { from: Point; to: Point }[]): Point {
+  if (pairs.length < MIN_PARTS_FOR_COMMON_SHIFT) return { x: 0, y: 0 };
+  return { x: median(pairs.map((p) => p.to.x - p.from.x)), y: median(pairs.map((p) => p.to.y - p.from.y)) };
+}
+
+function residualMove(before: BBox, after: BBox, shift: Point) {
+  const p = centre(before);
+  const q = centre(after);
+  return Math.hypot(q.x - p.x - shift.x, q.y - p.y - shift.y);
 }
 
 function capitalize(s: string) {
