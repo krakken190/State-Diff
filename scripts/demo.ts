@@ -57,7 +57,7 @@ async function setup() {
 
   const project = await api<{ id: string }>("POST", "/projects", {
     name: "ESP32 Motor Controller",
-    description: "Simulated rig: ESP32 DevKitC + L9110S motor driver + DHT22. Photos are rendered; tests are simulated.",
+    description: "Simulated rig: ESP32 DevKitC + L9110S motor driver + DHT22. Images are AI-enhanced; tests are simulated.",
     boardFamily: "ESP32",
     hardwareContext: PIN_MAP,
   });

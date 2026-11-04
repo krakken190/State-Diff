@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client-api";
 import type { CheckpointPayload } from "./checkpoint-view";
 import { EvidenceImage, type BBox, type Overlay } from "./evidence-image";
@@ -60,6 +60,11 @@ export function ReviewPanel({
   onError: (m: string | null) => void;
 }) {
   const [selected, setSelected] = useState<Selection>(null);
+  const sidePanelRef = useRef<HTMLDivElement>(null);
+  // The editor opens at the top of the panel, so bring it into view when a list item far below is clicked.
+  useEffect(() => {
+    if (selected) sidePanelRef.current?.scrollTo({ top: 0 });
+  }, [selected]);
   const [drawing, setDrawing] = useState<"component" | "connection" | null>(null);
   const [draft, setDraft] = useState<Draft>(null);
   const [saving, setSaving] = useState(false);
@@ -112,7 +117,7 @@ export function ReviewPanel({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-      <div className="grid h-fit gap-2">
+      <div className="grid h-fit gap-2 lg:sticky lg:top-20">
         <EvidenceImage
           src={`/api/captures/${capture.id}/image`}
           width={capture.width}
@@ -153,7 +158,7 @@ export function ReviewPanel({
         )}
       </div>
 
-      <div className="grid h-fit gap-4">
+      <div ref={sidePanelRef} className="grid h-fit content-start gap-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-10.5rem)] lg:overflow-y-auto lg:pr-1">
         {(selComp || selWire) && (
           <Card className="border-accent/60 p-4">
             {selComp && (
